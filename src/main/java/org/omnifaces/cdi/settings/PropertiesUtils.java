@@ -1,4 +1,4 @@
-package org.omnifaces.settings;
+package org.omnifaces.cdi.settings;
 
 import java.util.Map;
 

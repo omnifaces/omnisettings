@@ -1,6 +1,6 @@
-package org.omnifaces.settings;
+package org.omnifaces.cdi.settings;
 
-import static org.omnifaces.settings.PropertiesUtils.loadXMLProperties;
+import static org.omnifaces.cdi.settings.PropertiesUtils.loadXMLProperties;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;
