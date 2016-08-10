@@ -1,6 +1,8 @@
 package org.omnifaces.cdi.settings;
 
-import static org.omnifaces.cdi.settings.PropertiesUtils.loadXMLProperties;
+
+import static org.omnifaces.utils.properties.PropertiesUtils.loadPropertiesFromClasspath;
+import static org.omnifaces.utils.properties.PropertiesUtils.loadXMLPropertiesStagedFromClassPath;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;
@@ -19,7 +21,14 @@ public class ApplicationSettingsLoader {
 	private Map<String, String> settings;
 	
 	public void init(@Observes @Initialized(ApplicationScoped.class) ServletContext init) {
-		settings = loadXMLProperties("application-settings.xml");
+		
+		Map<String, String> internalSettings = loadPropertiesFromClasspath("META-INF/omni-settings");
+		
+		// TODO: use service loader
+		settings = loadXMLPropertiesStagedFromClassPath(
+					internalSettings.getOrDefault("fileName", "application-settings.xml"),
+					internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage"),
+					internalSettings.get("defaultStage"));
 	}
 
 	@Produces
