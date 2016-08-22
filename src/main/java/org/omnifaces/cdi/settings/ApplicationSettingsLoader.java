@@ -7,6 +7,7 @@ import static org.omnifaces.utils.properties.PropertiesUtils.loadXMLPropertiesSt
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.event.Observes;
@@ -20,7 +21,12 @@ public class ApplicationSettingsLoader {
 
 	private Map<String, String> settings;
 	
-	public void init(@Observes @Initialized(ApplicationScoped.class) ServletContext init) {
+	public void eager(@Observes @Initialized(ApplicationScoped.class) ServletContext init) {
+		// NOOP
+	}
+	
+	@PostConstruct
+	public void init() {
 		
 		Map<String, String> internalSettings = loadPropertiesFromClasspath("META-INF/omni-settings");
 		
