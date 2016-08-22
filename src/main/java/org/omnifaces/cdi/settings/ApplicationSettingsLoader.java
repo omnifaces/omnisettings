@@ -9,21 +9,14 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Named;
-import javax.servlet.ServletContext;
 
 @ApplicationScoped
 public class ApplicationSettingsLoader {
 
 	private Map<String, String> settings;
-	
-	public void eager(@Observes @Initialized(ApplicationScoped.class) ServletContext init) {
-		// NOOP
-	}
 	
 	@PostConstruct
 	public void init() {
