@@ -1,10 +1,13 @@
 package org.omnifaces.cdi.settings;
 
 
+import static org.omnifaces.utils.properties.PropertiesUtils.getStage;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadPropertiesFromClasspath;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadXMLPropertiesStagedFromClassPath;
 
 import java.lang.annotation.Annotation;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -20,14 +23,24 @@ public class ApplicationSettingsLoader {
 	
 	@PostConstruct
 	public void init() {
-		
+
+		// TODO: use service loader
 		Map<String, String> internalSettings = loadPropertiesFromClasspath("META-INF/omni-settings");
 		
-		// TODO: use service loader
-		settings = loadXMLPropertiesStagedFromClassPath(
-					internalSettings.getOrDefault("fileName", "application-settings.xml"),
-					internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage"),
-					internalSettings.get("defaultStage"));
+		Map<String, String> mutableSettings = new HashMap<>();
+		
+		 String stageSystemPropertyName = internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage");
+		 String defaultStage = internalSettings.get("defaultStage");
+		
+		mutableSettings.putAll(loadXMLPropertiesStagedFromClassPath(
+			internalSettings.getOrDefault("fileName", "application-settings.xml"),
+			stageSystemPropertyName,
+			defaultStage));
+		
+		// Non-overridable special setting
+		mutableSettings.put("actualStageName", getStage(stageSystemPropertyName, defaultStage));
+		
+		settings = Collections.unmodifiableMap(mutableSettings);
 	}
 
 	@Produces
