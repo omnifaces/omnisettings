@@ -1,46 +1,41 @@
 package org.omnifaces.cdi.settings;
 
 
-import static org.omnifaces.utils.properties.PropertiesUtils.getStage;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableList;
+import static java.util.regex.Pattern.quote;
+import static java.util.stream.Collectors.toList;
+import static org.omnifaces.utils.Lang.isEmpty;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadPropertiesFromClasspath;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadXMLPropertiesStagedFromClassPath;
 
 import java.lang.annotation.Annotation;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Initialized;
+import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Named;
+import javax.servlet.ServletContext;
 
 @ApplicationScoped
 public class ApplicationSettingsLoader {
 
 	private Map<String, String> settings;
-	
-	@PostConstruct
-	public void init() {
+
+	public void init(@Observes @Initialized(ApplicationScoped.class) ServletContext init) {
+
+		Map<String, String> internalSettings = loadPropertiesFromClasspath("META-INF/omni-settings");
 
 		// TODO: use service loader
-		Map<String, String> internalSettings = loadPropertiesFromClasspath("META-INF/omni-settings");
-		
-		Map<String, String> mutableSettings = new HashMap<>();
-		
-		 String stageSystemPropertyName = internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage");
-		 String defaultStage = internalSettings.get("defaultStage");
-		
-		mutableSettings.putAll(loadXMLPropertiesStagedFromClassPath(
-			internalSettings.getOrDefault("fileName", "application-settings.xml"),
-			stageSystemPropertyName,
-			defaultStage));
-		
-		// Non-overridable special setting
-		mutableSettings.put("actualStageName", getStage(stageSystemPropertyName, defaultStage));
-		
-		settings = Collections.unmodifiableMap(mutableSettings);
+		settings = loadXMLPropertiesStagedFromClassPath(
+					internalSettings.getOrDefault("fileName", "application-settings.xml"),
+					internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage"),
+					internalSettings.get("defaultStage"));
 	}
 
 	@Produces
@@ -54,13 +49,9 @@ public class ApplicationSettingsLoader {
 	@ApplicationSetting
 	public String getStringSetting(InjectionPoint injectionPoint) {
 		String value = settings.get(injectionPoint.getMember().getName());
+
 		if (value == null) {
-			for (Annotation annotation : injectionPoint.getQualifiers()) {
-				if (annotation instanceof ApplicationSetting) {
-					value = ((ApplicationSetting) annotation).defaultValue();
-					break;
-				}
-			}
+			value = getApplicationSetting(injectionPoint).defaultValue();
 		}
 
 		return value;
@@ -84,5 +75,33 @@ public class ApplicationSettingsLoader {
 		return Boolean.valueOf(getStringSetting(injectionPoint));
 	}
 
+	@Produces
+	@ApplicationSetting
+	public List<String> getSeparatedStringSetting(InjectionPoint injectionPoint) {
+		String setting = getStringSetting(injectionPoint);
+
+		if (isEmpty(setting)) {
+			return emptyList();
+		}
+
+		String separator = getApplicationSetting(injectionPoint).separatedBy();
+		return unmodifiableList(asList(setting.split("\\s*" + quote(separator) + "\\s*")));
+	}
+
+	@Produces
+	@ApplicationSetting
+	public List<Long> getSeparatedLongSetting(InjectionPoint injectionPoint) {
+		return unmodifiableList(getSeparatedStringSetting(injectionPoint).stream().map(Long::valueOf).collect(toList()));
+	}
+
+	private static ApplicationSetting getApplicationSetting(InjectionPoint injectionPoint) {
+		for (Annotation annotation : injectionPoint.getQualifiers()) {
+			if (annotation instanceof ApplicationSetting) {
+				return (ApplicationSetting) annotation;
+			}
+		}
+
+		return null;
+	}
 
 }
