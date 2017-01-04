@@ -1,10 +1,16 @@
 package org.omnifaces.cdi.settings;
 
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableList;
+import static java.util.stream.Collectors.toList;
+import static org.omnifaces.utils.Lang.isEmpty;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadPropertiesFromClasspath;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadXMLPropertiesStagedFromClassPath;
 
 import java.lang.annotation.Annotation;
+import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -19,11 +25,11 @@ import javax.servlet.ServletContext;
 public class ApplicationSettingsLoader {
 
 	private Map<String, String> settings;
-	
+
 	public void init(@Observes @Initialized(ApplicationScoped.class) ServletContext init) {
-		
+
 		Map<String, String> internalSettings = loadPropertiesFromClasspath("META-INF/omni-settings");
-		
+
 		// TODO: use service loader
 		settings = loadXMLPropertiesStagedFromClassPath(
 					internalSettings.getOrDefault("fileName", "application-settings.xml"),
@@ -72,5 +78,17 @@ public class ApplicationSettingsLoader {
 		return Boolean.valueOf(getStringSetting(injectionPoint));
 	}
 
+	@Produces
+	@ApplicationSetting
+	public List<String> getCommaSeparatedStringSetting(InjectionPoint injectionPoint) {
+		String setting = getStringSetting(injectionPoint);
+		return isEmpty(setting) ? emptyList() : unmodifiableList(asList(setting.split("\\s*,\\s*")));
+	}
+
+	@Produces
+	@ApplicationSetting
+	public List<Long> getCommaSeparatedLongSetting(InjectionPoint injectionPoint) {
+		return unmodifiableList(getCommaSeparatedStringSetting(injectionPoint).stream().map(Long::valueOf).collect(toList()));
+	}
 
 }
