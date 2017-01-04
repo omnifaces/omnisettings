@@ -7,35 +7,47 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.regex.Pattern.quote;
 import static java.util.stream.Collectors.toList;
 import static org.omnifaces.utils.Lang.isEmpty;
+import static org.omnifaces.utils.properties.PropertiesUtils.getStage;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadPropertiesFromClasspath;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadXMLPropertiesStagedFromClassPath;
 
 import java.lang.annotation.Annotation;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Named;
-import javax.servlet.ServletContext;
 
 @ApplicationScoped
 public class ApplicationSettingsLoader {
 
 	private Map<String, String> settings;
 
-	public void init(@Observes @Initialized(ApplicationScoped.class) ServletContext init) {
-
-		Map<String, String> internalSettings = loadPropertiesFromClasspath("META-INF/omni-settings");
+	@PostConstruct
+	public void init() {
 
 		// TODO: use service loader
-		settings = loadXMLPropertiesStagedFromClassPath(
-					internalSettings.getOrDefault("fileName", "application-settings.xml"),
-					internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage"),
-					internalSettings.get("defaultStage"));
+		Map<String, String> internalSettings = loadPropertiesFromClasspath("META-INF/omni-settings");
+
+		Map<String, String> mutableSettings = new HashMap<>();
+
+		 String stageSystemPropertyName = internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage");
+		 String defaultStage = internalSettings.get("defaultStage");
+
+		mutableSettings.putAll(loadXMLPropertiesStagedFromClassPath(
+			internalSettings.getOrDefault("fileName", "application-settings.xml"),
+			stageSystemPropertyName,
+			defaultStage));
+
+		// Non-overridable special setting
+		mutableSettings.put("actualStageName", getStage(stageSystemPropertyName, defaultStage));
+
+		settings = Collections.unmodifiableMap(mutableSettings);
 	}
 
 	@Produces
