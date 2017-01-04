@@ -16,6 +16,5 @@ import javax.inject.Qualifier;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ TYPE, METHOD, FIELD, PARAMETER })
 public @interface ApplicationSetting {
-	@Nonbinding String defaultValue() default "";
-	@Nonbinding String separatedBy() default ",";
+	@Nonbinding	String defaultValue() default "";
 }
