@@ -4,6 +4,7 @@ package org.omnifaces.cdi.settings;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
+import static java.util.regex.Pattern.quote;
 import static java.util.stream.Collectors.toList;
 import static org.omnifaces.utils.Lang.isEmpty;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadPropertiesFromClasspath;
@@ -48,13 +49,9 @@ public class ApplicationSettingsLoader {
 	@ApplicationSetting
 	public String getStringSetting(InjectionPoint injectionPoint) {
 		String value = settings.get(injectionPoint.getMember().getName());
+
 		if (value == null) {
-			for (Annotation annotation : injectionPoint.getQualifiers()) {
-				if (annotation instanceof ApplicationSetting) {
-					value = ((ApplicationSetting) annotation).defaultValue();
-					break;
-				}
-			}
+			value = getApplicationSetting(injectionPoint).defaultValue();
 		}
 
 		return value;
@@ -80,15 +77,31 @@ public class ApplicationSettingsLoader {
 
 	@Produces
 	@ApplicationSetting
-	public List<String> getCommaSeparatedStringSetting(InjectionPoint injectionPoint) {
+	public List<String> getSeparatedStringSetting(InjectionPoint injectionPoint) {
 		String setting = getStringSetting(injectionPoint);
-		return isEmpty(setting) ? emptyList() : unmodifiableList(asList(setting.split("\\s*,\\s*")));
+
+		if (isEmpty(setting)) {
+			return emptyList();
+		}
+
+		String separator = getApplicationSetting(injectionPoint).separatedBy();
+		return unmodifiableList(asList(setting.split("\\s*" + quote(separator) + "\\s*")));
 	}
 
 	@Produces
 	@ApplicationSetting
-	public List<Long> getCommaSeparatedLongSetting(InjectionPoint injectionPoint) {
-		return unmodifiableList(getCommaSeparatedStringSetting(injectionPoint).stream().map(Long::valueOf).collect(toList()));
+	public List<Long> getSeparatedLongSetting(InjectionPoint injectionPoint) {
+		return unmodifiableList(getSeparatedStringSetting(injectionPoint).stream().map(Long::valueOf).collect(toList()));
+	}
+
+	private static ApplicationSetting getApplicationSetting(InjectionPoint injectionPoint) {
+		for (Annotation annotation : injectionPoint.getQualifiers()) {
+			if (annotation instanceof ApplicationSetting) {
+				return (ApplicationSetting) annotation;
+			}
+		}
+
+		return null;
 	}
 
 }
