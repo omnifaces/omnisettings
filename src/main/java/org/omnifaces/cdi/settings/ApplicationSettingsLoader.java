@@ -6,6 +6,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.regex.Pattern.quote;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.omnifaces.utils.Lang.isEmpty;
 import static org.omnifaces.utils.properties.PropertiesUtils.getStage;
 import static org.omnifaces.utils.properties.PropertiesUtils.loadPropertiesFromClasspath;
@@ -53,8 +54,18 @@ public class ApplicationSettingsLoader {
 	@Produces
 	@Named("applicationSettings")
 	@ApplicationSettings
-	public Map<String, String> getSettings() {
-		return settings;
+	public Map<String, String> getSettings(InjectionPoint injectionPoint) {
+		if (injectionPoint == null) {
+			return settings;
+		}
+
+		String prefix = getApplicationSettings(injectionPoint).prefixedBy();
+
+		if (prefix.isEmpty()) {
+			return settings;
+		}
+
+		return settings.entrySet().stream().filter(e -> e.getKey().startsWith(prefix)).collect(toMap(e -> e.getKey(), e -> e.getValue()));
 	}
 
 	@Produces
@@ -107,9 +118,18 @@ public class ApplicationSettingsLoader {
 	}
 
 	private static ApplicationSetting getApplicationSetting(InjectionPoint injectionPoint) {
+		return getQualifier(injectionPoint, ApplicationSetting.class);
+	}
+
+	private static ApplicationSettings getApplicationSettings(InjectionPoint injectionPoint) {
+		return getQualifier(injectionPoint, ApplicationSettings.class);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <A extends Annotation> A getQualifier(InjectionPoint injectionPoint, Class<A> qualifier) {
 		for (Annotation annotation : injectionPoint.getQualifiers()) {
-			if (annotation instanceof ApplicationSetting) {
-				return (ApplicationSetting) annotation;
+			if (qualifier.isInstance(annotation)) {
+				return (A) annotation;
 			}
 		}
 
