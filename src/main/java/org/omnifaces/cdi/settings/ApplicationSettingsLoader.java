@@ -13,6 +13,9 @@ import static org.omnifaces.utils.properties.PropertiesUtils.loadPropertiesFromC
 import static org.omnifaces.utils.properties.PropertiesUtils.loadXMLPropertiesStagedFromClassPath;
 
 import java.lang.annotation.Annotation;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +26,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Named;
+
+import org.omnifaces.utils.properties.PropertiesUtils;
 
 @ApplicationScoped
 public class ApplicationSettingsLoader {
@@ -37,13 +42,26 @@ public class ApplicationSettingsLoader {
 
 		Map<String, String> mutableSettings = new HashMap<>();
 
-		 String stageSystemPropertyName = internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage");
-		 String defaultStage = internalSettings.get("defaultStage");
+		String stageSystemPropertyName = internalSettings.getOrDefault("stageSystemPropertyName", "omni.stage");
+		String settingsSystemPropertyName = internalSettings.getOrDefault("settingsSystemPropertyName", "omni.settings");
+		
+		String defaultStage = internalSettings.get("defaultStage");
 
 		mutableSettings.putAll(loadXMLPropertiesStagedFromClassPath(
 			internalSettings.getOrDefault("fileName", "application-settings.xml"),
 			stageSystemPropertyName,
 			defaultStage));
+		
+		String settingFile = System.getProperty(settingsSystemPropertyName);
+		if (settingFile != null) {
+			URL url;
+			try {
+				url = Paths.get(settingFile).toUri().toURL();
+			} catch (MalformedURLException e) {
+				throw new IllegalStateException("Error loading settings from " + settingFile, e);
+			}
+			PropertiesUtils.loadXMLFromURL(url, mutableSettings);
+		}
 
 		// Non-overridable special setting
 		mutableSettings.put("actualStageName", getStage(stageSystemPropertyName, defaultStage));
