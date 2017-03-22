@@ -25,13 +25,15 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
+import javax.inject.Inject;
 import javax.inject.Named;
-
-import org.omnifaces.utils.properties.PropertiesUtils;
 
 @ApplicationScoped
 public class ApplicationSettingsLoader {
 
+	@Inject
+	private PropertiesFileLoader propertiesFileLoader;
+	
 	private Map<String, String> settings;
 
 	@PostConstruct
@@ -60,7 +62,7 @@ public class ApplicationSettingsLoader {
 			} catch (MalformedURLException e) {
 				throw new IllegalStateException("Error loading settings from " + settingFile, e);
 			}
-			PropertiesUtils.loadXMLFromURL(url, mutableSettings);
+			propertiesFileLoader.load(url, mutableSettings);
 		}
 
 		// Non-overridable special setting
