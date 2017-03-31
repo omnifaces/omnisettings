@@ -9,7 +9,7 @@
 
 	<groupId>org.omnifaces</groupId>
 	<artifactId>omnisettings</artifactId>
-	<version>0.1</version>
+	<version>0.2-SNAPSHOT</version>
 
 	<name>OmniSettings</name>
 	<description>Very basic provider for injectable settings</description>
