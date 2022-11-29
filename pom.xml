@@ -4,7 +4,7 @@
 
 	<groupId>org.omnifaces</groupId>
 	<artifactId>omnisettings</artifactId>
-	<version>0.2-SNAPSHOT</version>
+	<version>0.2</version>
 
 	<name>OmniSettings</name>
 	<description>Very basic provider for injectable settings</description>
